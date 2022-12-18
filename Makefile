@@ -1,30 +1,44 @@
-SRCS = server.c client.c
-OBJS = $(SRCS:.c=.o)
+CLIENT = client
+SERVER = server
+LIBFT = libft
+
+OPTIONS = -c
+CFLAGS = -Wall -Wextra -Werror -Ilibft
+LIB = -Llibft -lft
+
+SRCS_CLIENT = client.c
+SRCS_SERVER = server.c
+
+OBJS_CLIENT = $(SRCS_CLIENT:.c=.o)
+OBJS_SERVER = $(SRCS_SERVER:.c=.o)
 
 CC = gcc
-CFLAGS = -Wall -Wextra -Werror
+RM = rm -rf
 
-.PHONY: all server client clean fclean re
+all: $(LIBFT) $(CLIENT) $(SERVER)
 
-all: server client
-
-server: libft server.o
-	$(CC) server.o -o server libft/libft.a
-
-client: libft client.o
-	$(CC) client.o -o client libft/libft.a
+$(LIBFT):
+	make -C $(@)
 
 %.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) $(OPTIONS) $(<) -o $(<:.c=.o)
 
-libft:
-	make -C libft
+$(CLIENT): $(OBJS_CLIENT)
+	$(CC) $(CFLAGS) $(OBJS_CLIENT) -o $(CLIENT) $(LIB)
+
+$(SERVER): $(OBJS_SERVER)
+	$(CC) $(CFLAGS) $(OBJS_SERVER) -o $(SERVER) $(LIB)
 
 clean:
-	rm -rf $(OBJS)
-	make -C libft clean
+	$(RM) -f $(OBJS_CLIENT)
+	$(RM) -f $(OBJS_SERVER)
+	make -C $(LIBFT) clean
 
 fclean: clean
-	rm -rf server client libft/libft.a
+	$(RM) -f $(CLIENT)
+	$(RM) -f $(SERVER)
+	make -C $(LIBFT) fclean
 
 re: fclean all
+
+.PHONY: re fclean clean all libft

@@ -1,15 +1,29 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   server.c                                           :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: rzaccari <rzaccari@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2022/12/18 09:17:11 by rzaccari          #+#    #+#             */
+/*   Updated: 2022/12/18 09:23:53 by rzaccari         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include <stdio.h>
 #include <unistd.h>
 #include <signal.h>
-#include "./libft/libft.h"
+#include "libft.h"
 
-int	displayPid()
+typedef struct s_msg
 {
-	ft_putstr_fd("PID: ", 1);
-	ft_putnbr_fd(getpid(), 1);
-	write(1, "\n", 1);
-	return (1);
-}
+	char		*s;
+	int			i;
+	int			j;
+	int			size;
+	pid_t		pid;
+	int			check_pid;
+}	t_msg;
 
 pid_t	get_pid(int sig, int check_pid)
 {
@@ -30,7 +44,7 @@ pid_t	get_pid(int sig, int check_pid)
 char	*strdup_plus(char *s)
 {
 	char	*ret;
-	int	i;
+	int		i;
 
 	ret = ft_calloc(ft_strlen(s) + 1001, sizeof(char));
 	if (!ret)
@@ -45,65 +59,69 @@ char	*strdup_plus(char *s)
 	return (ret);
 }
 
-void	displayCharacter(int sig)
+int	truc(t_msg *all)
 {
-	static char			*s;
-	static int			i;
-	static int			j;
-	static int			size;
-	static pid_t		pid;
-	static int			check_pid;
-
-	if (check_pid < 32)
+	if (!all->s[all->j])
 	{
-		pid = get_pid(sig, check_pid);
-		++check_pid;
+		kill(all->pid, SIGUSR1);
+		all->check_pid = 0;
+		write(1, all->s, ft_strlen(all->s));
+		free(all->s);
+		all->s = NULL;
+		all->j = 0;
+		all->i = 0;
+		return (1);
+	}
+	all->i = 0;
+	++all->j;
+	if (all->j >= (1000 * all->size) - 1)
+	{
+		all->size++;
+		all->s = strdup_plus(all->s);
+		if (!all->s)
+			return (1);
+	}
+	all->s[all->j] = 0;
+	return (0);
+}
+
+void	display_character(int sig)
+{
+	static t_msg	all;
+
+	if (all.check_pid < 32)
+	{
+		all.pid = get_pid(sig, all.check_pid);
+		all.check_pid++;
 		return ;
 	}
-	if (!s)
+	if (!all.s)
 	{
-		s = ft_calloc(1001, sizeof(char));
-		if (!s)
+		all.s = ft_calloc(1001, sizeof(char));
+		if (!all.s)
 			return ;
 	}
-	s[j] <<= 1;
+	all.s[all.j] <<= 1;
 	if (sig == SIGUSR1)
-		s[j] = s[j] | (unsigned char)1;
-	if (i == 7)
+		all.s[all.j] = all.s[all.j] | (unsigned char)1;
+	if (all.i == 7)
 	{
-		if (!s[j])
-		{
-			kill(pid, SIGUSR1);
-			check_pid = 0;
-			write(1, s, ft_strlen(s));
-			free(s);
-			s = NULL;
-			j = 0;
-			i = 0;
+		if (truc(&all))
 			return ;
-		}
-		i = 0;
-		++j;
-		if (j >= (1000 * size) - 1)
-		{
-			size++;
-			s = strdup_plus(s);
-			if (!s)
-				return ;
-		}
-		s[j] = 0;
 	}
 	else
-		++i;
+		++all.i;
 }
 
 int	main(int argc, char *argv[])
 {
 	(void)argc;
 	(void)argv;
-	displayPid();
-	signal(SIGUSR1, displayCharacter);
-	signal(SIGUSR2, displayCharacter);
+	ft_putstr_fd("PID: ", 1);
+	ft_putnbr_fd(getpid(), 1);
+	write(1, "\n", 1);
+	signal(SIGUSR1, display_character);
+	signal(SIGUSR2, display_character);
 	while (1)
 		;
 	return (1);
