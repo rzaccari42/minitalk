@@ -6,7 +6,7 @@
 /*   By: rzaccari <rzaccari@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/12/18 09:17:11 by rzaccari          #+#    #+#             */
-/*   Updated: 2022/12/18 09:23:53 by rzaccari         ###   ########.fr       */
+/*   Updated: 2022/12/23 17:41:36 by rzaccari         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,7 +17,7 @@
 
 typedef struct s_msg
 {
-	char		*s;
+	char		*str;
 	int			i;
 	int			j;
 	int			size;
@@ -41,76 +41,77 @@ pid_t	get_pid(int sig, int check_pid)
 	return (pid);
 }
 
-char	*strdup_plus(char *s)
+char	*strdup_plus(char *str)
 {
 	char	*ret;
 	int		i;
 
-	ret = ft_calloc(ft_strlen(s) + 1001, sizeof(char));
+	ret = ft_calloc(ft_strlen(str) + 1001, sizeof(char));
 	if (!ret)
 		return (NULL);
 	i = 0;
-	while (s[i])
+	while (str[i])
 	{
-		ret[i] = s[i];
+		ret[i] = str[i];
 		i++;
 	}
-	free(s);
+	free(str);
 	return (ret);
 }
 
-int	truc(t_msg *all)
+int	display_message(t_msg *message)
 {
-	if (!all->s[all->j])
+	if (!message->str[message->j])
 	{
-		kill(all->pid, SIGUSR1);
-		all->check_pid = 0;
-		write(1, all->s, ft_strlen(all->s));
-		free(all->s);
-		all->s = NULL;
-		all->j = 0;
-		all->i = 0;
+		kill(message->pid, SIGUSR1);
+		message->check_pid = 0;
+		write(1, message->str, ft_strlen(message->str));
+		write(1, "\n", 1);
+		free(message->str);
+		message->str = NULL;
+		message->j = 0;
+		message->i = 0;
 		return (1);
 	}
-	all->i = 0;
-	++all->j;
-	if (all->j >= (1000 * all->size) - 1)
+	message->i = 0;
+	++message->j;
+	if (message->j >= (1000 * message->size) - 1)
 	{
-		all->size++;
-		all->s = strdup_plus(all->s);
-		if (!all->s)
+		message->size++;
+		message->str = strdup_plus(message->str);
+		if (!message->str)
 			return (1);
 	}
-	all->s[all->j] = 0;
+	message->str[message->j] = 0;
 	return (0);
 }
 
-void	display_character(int sig)
+void	make_message(int sig)
 {
-	static t_msg	all;
+	static t_msg	message;
 
-	if (all.check_pid < 32)
+	if (message.check_pid < 32)
 	{
-		all.pid = get_pid(sig, all.check_pid);
-		all.check_pid++;
+		message.pid = get_pid(sig, message.check_pid);
+		message.check_pid++;
 		return ;
 	}
-	if (!all.s)
+	if (!message.str)
 	{
-		all.s = ft_calloc(1001, sizeof(char));
-		if (!all.s)
+		message.str = ft_calloc(1001, sizeof(char));
+		if (!message.str)
 			return ;
 	}
-	all.s[all.j] <<= 1;
+	message.str[message.j] <<= 1;
 	if (sig == SIGUSR1)
-		all.s[all.j] = all.s[all.j] | (unsigned char)1;
-	if (all.i == 7)
+		message.str[message.j] = message.str[message.j] | (unsigned char)1;
+	if (message.i == 7)
 	{
-		if (truc(&all))
+		if (display_message(&message))
 			return ;
 	}
 	else
-		++all.i;
+		++message.i;
 }
 
 int	main(int argc, char *argv[])
@@ -120,8 +121,8 @@ int	main(int argc, char *argv[])
 	ft_putstr_fd("PID: ", 1);
 	ft_putnbr_fd(getpid(), 1);
 	write(1, "\n", 1);
-	signal(SIGUSR1, display_character);
-	signal(SIGUSR2, display_character);
+	signal(SIGUSR1, make_message);
+	signal(SIGUSR2, make_message);
 	while (1)
 		;
 	return (1);
